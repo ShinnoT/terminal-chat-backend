@@ -1,0 +1,19 @@
+{
+  "name": "terminal-chat-backend",
+  "version": "1.0.0",
+  "description": "Backend REST API with Socket.io for terminal-chat",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index.js"
+  },
+  "author": "vagabadu",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.6.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
