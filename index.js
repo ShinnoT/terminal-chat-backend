@@ -43,12 +43,12 @@ io.on("connection", (socket) => {
                 error: "Username already taken.",
             });
 
-        userData = { username };
+        userData = { id: socket.id, username };
 
         socket.data.user = userData;
         socket.emit("login", {
             success: true,
-            data: userData,
+            user: userData,
         });
     });
 
