@@ -1,4 +1,5 @@
 // imports
+const { loginValidator } = require("./helpers");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -24,26 +25,13 @@ io.on("connection", (socket) => {
 
     // login
     socket.on("login", async (data) => {
-        const { username } = data;
+        const { username, room_id, room_password } = data;
+        const validationErrors = await loginValidator({ ...data, io });
 
-        if (!username)
-            return socket.emit("login", {
-                success: false,
-                error: "Username must not be blank.",
-            });
+        // TODO: emit login with success:false and errors from above function
+        if (validationErrors) return socket.emit("login", validationErrors);
 
-        const allSockets = await io.fetchSockets();
-        const userSockets = allSockets.filter(
-            (s) => s?.data?.user?.username === username
-        );
-
-        if (userSockets.length > 0)
-            return socket.emit("login", {
-                success: false,
-                error: "Username already taken.",
-            });
-
-        userData = { id: socket.id, username };
+        userData = { id: socket.id, username, room_id, room_password };
 
         socket.data.user = userData;
         socket.emit("login", {
