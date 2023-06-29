@@ -28,7 +28,7 @@ io.on("connection", (socket) => {
         const { username, room_id, room_password } = data;
         const validationErrors = await loginValidator({ ...data, io });
 
-        // TODO: emit login with success:false and errors from above function
+        // emit login with success:false and errors from above function
         if (validationErrors) return socket.emit("login", validationErrors);
 
         userData = { id: socket.id, username, room_id, room_password };

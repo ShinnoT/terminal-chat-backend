@@ -13,7 +13,7 @@ exports.loginValidator = async ({ username, room_id, room_password, io }) => {
             ...errors,
             error: {
                 ...errors.error,
-                usernameError: "Username must not be blank.",
+                usernameError: "⌧ Username must not be blank.",
             },
         };
 
@@ -22,7 +22,7 @@ exports.loginValidator = async ({ username, room_id, room_password, io }) => {
             ...errors,
             error: {
                 ...errors.error,
-                roomIdError: "Room ID must not be blank.",
+                roomIdError: "⌧ Room ID must not be blank.",
             },
         };
 
@@ -31,7 +31,7 @@ exports.loginValidator = async ({ username, room_id, room_password, io }) => {
             ...errors,
             error: {
                 ...errors.error,
-                roomPasswordError: "Room password must not be blank.",
+                roomPasswordError: "⌧ Room password must not be blank.",
             },
         };
     // ------------------------------------
@@ -51,7 +51,7 @@ exports.loginValidator = async ({ username, room_id, room_password, io }) => {
             ...errors,
             error: {
                 ...errors.error,
-                usernameError: "Username already taken.",
+                usernameError: "⌧ Username already taken.",
             },
         };
 
@@ -60,7 +60,7 @@ exports.loginValidator = async ({ username, room_id, room_password, io }) => {
             ...errors,
             error: {
                 ...errors.error,
-                roomIdError: "Room ID already taken.",
+                roomIdError: "⌧ Room ID already taken.",
             },
         };
     // ------------------------------------
