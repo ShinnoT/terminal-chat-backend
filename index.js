@@ -1,5 +1,6 @@
 // imports
 const { loginValidator } = require("./helpers");
+const { createRoom, joinRoom } = require("./handlers");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -20,24 +21,29 @@ const io = new Server(server, {
 //     res.status(200).json({ message: "Hello World." });
 // });
 
+// NOTE: THINK ABOUT HOW TO USE MIDDLEWARE TO AUTHENTICATE AND AUTHORIZE USERS.
 io.on("connection", (socket) => {
     console.log("USER CONNECTED. --> ", socket.id);
 
     // login
-    socket.on("login", async (data) => {
-        const { username, room_id, room_password } = data;
-        const validationErrors = await loginValidator({ ...data, io });
+    socket.on("login", async ({ requestType, formData }) => {
+        const validationErrors = await loginValidator({
+            requestType,
+            formData,
+            io,
+        });
 
-        // emit login with success:false and errors from above function
         if (validationErrors) return socket.emit("login", validationErrors);
 
-        userData = { id: socket.id, username, room_id, room_password };
+        if (requestType === "CREATE") createRoom({ io, socket, ...formData });
+        if (requestType === "JOIN") joinRoom({ io, socket, ...formData });
+    });
 
-        socket.data.user = userData;
-        socket.emit("login", {
-            success: true,
-            user: userData,
-        });
+    // message handler
+    socket.on("sendMessage", ({ username, room_id, message }) => {
+        console.log("Send message event called from client.", room_id);
+        io.to(room_id).emit("message", { username, message });
+        // io.to("secret_chat").emit("message", { username, message });
     });
 
     // fetch user
@@ -49,6 +55,9 @@ io.on("connection", (socket) => {
     // disconnect
     socket.on("disconnect", (reason) => {
         console.log(`USER ${socket.id} DISCONNECTED: `, reason);
+        // TODO: display message when user disconnected.
+        // const { room_id, username } = socket?.data?.user;
+        // io.to(room_id).emit("message", { username, message: "diconnected." });
     });
 });
 
