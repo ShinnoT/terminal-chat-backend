@@ -66,7 +66,7 @@ exports.loginValidator = async ({ requestType, formData, io }) => {
     }
 
     if (requestType === "JOIN") {
-        if (roomIdSockets.length === 0)
+        if (roomIdSockets.length === 0 && room_id)
             errors = {
                 ...errors,
                 error: {
