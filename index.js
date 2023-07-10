@@ -46,18 +46,53 @@ io.on("connection", (socket) => {
         // io.to("secret_chat").emit("message", { username, message });
     });
 
+    // logging messages handler
+    socket.on("loggingMessage", ({ username, room_id, message }) => {
+        console.log("Logging message event caled from client.");
+        io.to(room_id).emit("loggingMessage", { message });
+    });
+
     // fetch user
     socket.on("fetchUser", () => {
         const user = socket?.data?.user;
         user ? socket.emit("user", user) : socket.emit("user", null);
     });
 
+    // fetch room details
+    socket.on("fetchRoomDetails", async () => {
+        const { room_id } = socket?.data?.user;
+        const allSockets = await io.fetchSockets();
+        const roomIdSockets = allSockets.filter(
+            (s) => s?.data?.user?.room_id === room_id
+        );
+        const usersInRoom = roomIdSockets.map((s) => s?.data?.user);
+
+        socket.emit("roomDetails", {
+            userCount: usersInRoom.length,
+            users: usersInRoom,
+        });
+
+        if (usersInRoom.length >= 2)
+            io.to(room_id).emit("initializeEncryption");
+    });
+
+    // encryption
+    socket.on("publicKey", ({ publicKey }) => {
+        console.log("public key called from client. ", publicKey);
+        const { room_id } = socket?.data?.user;
+        socket.to(room_id).emit("finalizeEncryption", { publicKey });
+    });
+
     // disconnect
     socket.on("disconnect", (reason) => {
         console.log(`USER ${socket.id} DISCONNECTED: `, reason);
-        // TODO: display message when user disconnected.
-        // const { room_id, username } = socket?.data?.user;
-        // io.to(room_id).emit("message", { username, message: "diconnected." });
+        if (socket?.data?.user) {
+            const { room_id, username } = socket?.data?.user;
+            io.to(room_id).emit("message", {
+                username,
+                message: "diconnected.",
+            });
+        }
     });
 });
 
