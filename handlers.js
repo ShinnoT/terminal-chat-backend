@@ -38,7 +38,14 @@ exports.joinRoom = ({ io, socket, username, room_id, room_password }) => {
     socket.data.user = userData;
     socket.join(room_id);
 
-    socket.to(room_id).emit("message", { username, message: "connected." });
+    socket.to(room_id).emit("message", {
+        username,
+        message: {
+            encrypted: false,
+            value: "connected.",
+            iv: null,
+        },
+    });
 
     socket.emit("login", {
         requestType: "JOIN",

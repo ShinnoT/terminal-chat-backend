@@ -41,9 +41,9 @@ io.on("connection", (socket) => {
 
     // message handler
     socket.on("sendMessage", ({ username, room_id, message }) => {
-        console.log("Send message event called from client.", room_id);
+        console.log(`${username} sending a message to room: ${room_id}`);
+        console.log("message:: ", message?.value);
         io.to(room_id).emit("message", { username, message });
-        // io.to("secret_chat").emit("message", { username, message });
     });
 
     // logging messages handler
@@ -90,7 +90,11 @@ io.on("connection", (socket) => {
             const { room_id, username } = socket?.data?.user;
             io.to(room_id).emit("message", {
                 username,
-                message: "diconnected.",
+                message: {
+                    encrypted: false,
+                    value: "diconnected.",
+                    iv: null,
+                },
             });
         }
     });
