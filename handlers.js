@@ -1,10 +1,19 @@
-exports.createRoom = ({ io, socket, username, room_id, room_password }) => {
+const { encryptPass } = require("./encrypt");
+
+exports.createRoom = async ({
+    io,
+    socket,
+    username,
+    room_id,
+    room_password,
+}) => {
+    const encryptedPass = await encryptPass(room_password);
     userData = {
         id: socket.id,
         user_type: "ADMIN",
         username,
         room_id,
-        room_password,
+        room_password: encryptedPass,
     };
 
     socket.data.user = userData;
@@ -12,7 +21,7 @@ exports.createRoom = ({ io, socket, username, room_id, room_password }) => {
     socket.join(room_id);
 
     // NOTE: code below fetches all rooms
-    console.log("All rooms?? ", io.sockets.adapter.rooms);
+    // console.log("All rooms?? ", io.sockets.adapter.rooms);
 
     socket.emit("login", {
         requestType: "CREATE",

@@ -1,3 +1,7 @@
+const { sanitize } = require("isomorphic-dompurify");
+
+const { comparePass } = require("./encrypt");
+
 exports.loginValidator = async ({ requestType, formData, io }) => {
     const MAX_USERS_IN_ROOM = 2;
     const { username, room_id, room_password } = formData;
@@ -103,9 +107,11 @@ exports.loginValidator = async ({ requestType, formData, io }) => {
             const actualRoomPassword = roomIdSockets.filter(
                 (s) => s?.data?.user?.room_password
             )[0].data?.user?.room_password;
-            console.log("Found room password:: ", actualRoomPassword);
-            console.log("User provided password:: ", room_password);
-            if (actualRoomPassword !== room_password) {
+            const passIsCorrect = await comparePass({
+                rawPass: room_password,
+                correctPass: actualRoomPassword,
+            });
+            if (!passIsCorrect) {
                 errors = {
                     ...errors,
                     error: {
@@ -121,4 +127,12 @@ exports.loginValidator = async ({ requestType, formData, io }) => {
     const { usernameError, roomIdError, roomPasswordError } = errors?.error;
     const anyErrors = usernameError || roomIdError || roomPasswordError;
     return anyErrors ? errors : null;
+};
+
+exports.sanitizeLoginData = ({ username, room_id, room_password }) => {
+    return {
+        username: sanitize(username),
+        room_id: sanitize(room_id),
+        room_password: sanitize(room_password),
+    };
 };

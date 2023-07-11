@@ -10,7 +10,9 @@
   "author": "vagabadu",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^5.1.0",
     "express": "^4.18.2",
+    "isomorphic-dompurify": "^1.7.0",
     "socket.io": "^4.6.2"
   },
   "devDependencies": {

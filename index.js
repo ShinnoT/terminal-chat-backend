@@ -1,6 +1,7 @@
 // imports
-const { loginValidator } = require("./helpers");
+const { loginValidator, sanitizeLoginData } = require("./helpers");
 const { createRoom, joinRoom } = require("./handlers");
+const { sanitizer } = require("./sanitize");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -22,21 +23,24 @@ const io = new Server(server, {
 // });
 
 // NOTE: THINK ABOUT HOW TO USE MIDDLEWARE TO AUTHENTICATE AND AUTHORIZE USERS.
+// NOTE: check https://socket.io/docs/v4/server-socket-instance/ middleware section
 io.on("connection", (socket) => {
     console.log("USER CONNECTED. --> ", socket.id);
 
     // login
     socket.on("login", async ({ requestType, formData }) => {
+        const cleanData = sanitizeLoginData({ ...formData });
         const validationErrors = await loginValidator({
             requestType,
-            formData,
+            formData: cleanData,
             io,
         });
 
         if (validationErrors) return socket.emit("login", validationErrors);
 
-        if (requestType === "CREATE") createRoom({ io, socket, ...formData });
-        if (requestType === "JOIN") joinRoom({ io, socket, ...formData });
+        if (requestType === "CREATE")
+            await createRoom({ io, socket, ...cleanData });
+        if (requestType === "JOIN") joinRoom({ io, socket, ...cleanData });
     });
 
     // message handler
