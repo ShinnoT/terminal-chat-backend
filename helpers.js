@@ -1,4 +1,5 @@
 exports.loginValidator = async ({ requestType, formData, io }) => {
+    const MAX_USERS_IN_ROOM = 2;
     const { username, room_id, room_password } = formData;
     let errors = {
         requestType,
@@ -35,6 +36,18 @@ exports.loginValidator = async ({ requestType, formData, io }) => {
             error: {
                 ...errors.error,
                 roomPasswordError: "⌧ Room password must not be blank.",
+            },
+        };
+
+    const passwordTooSmall = !!room_password.length && room_password.length < 8;
+    const passwordTooLarge = room_password.length > 16;
+    if (passwordTooSmall || passwordTooLarge)
+        errors = {
+            ...errors,
+            error: {
+                ...errors.error,
+                roomPasswordError:
+                    "⌧ Room password must be between 8 - 16 chars.",
             },
         };
 
@@ -75,7 +88,18 @@ exports.loginValidator = async ({ requestType, formData, io }) => {
                 },
             };
 
-        if (roomIdSockets.length > 0) {
+        if (roomIdSockets.length >= MAX_USERS_IN_ROOM) {
+            errors = {
+                ...errors,
+                error: {
+                    ...errors.error,
+                    roomIdError:
+                        "⌧ This room is currently occupied and maxed out.",
+                },
+            };
+        }
+
+        if (roomIdSockets.length === 1) {
             const actualRoomPassword = roomIdSockets.filter(
                 (s) => s?.data?.user?.room_password
             )[0].data?.user?.room_password;
