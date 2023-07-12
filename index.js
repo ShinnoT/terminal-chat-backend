@@ -100,6 +100,7 @@ io.on("connection", (socket) => {
                     iv: null,
                 },
             });
+            io.to(room_id).emit("disableEncryption");
         }
     });
 });
