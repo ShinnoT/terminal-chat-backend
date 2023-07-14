@@ -1,5 +1,9 @@
 // imports
-const { loginValidator, sanitizeLoginData } = require("./helpers");
+const {
+    loginValidator,
+    sanitizeLoginData,
+    fetchAllInRoom,
+} = require("./helpers");
 const { createRoom, joinRoom } = require("./handlers");
 const { sanitizer } = require("./sanitize");
 const express = require("express");
@@ -17,10 +21,6 @@ const io = new Server(server, {
         origin: "http://localhost:3000",
     },
 });
-
-// app.get("/", (req, res) => {
-//     res.status(200).json({ message: "Hello World." });
-// });
 
 // NOTE: THINK ABOUT HOW TO USE MIDDLEWARE TO AUTHENTICATE AND AUTHORIZE USERS.
 // NOTE: check https://socket.io/docs/v4/server-socket-instance/ middleware section
@@ -40,26 +40,44 @@ io.on("connection", (socket) => {
 
         if (requestType === "CREATE")
             await createRoom({ io, socket, ...cleanData });
-        if (requestType === "JOIN") joinRoom({ io, socket, ...cleanData });
+        if (requestType === "JOIN")
+            await joinRoom({ io, socket, ...cleanData });
     });
 
     // message handler
     socket.on("sendMessage", ({ username, room_id, message }) => {
         console.log(`${username} sending a message to room: ${room_id}`);
-        console.log("message:: ", message?.value);
+        console.log("message:: ", message);
         io.to(room_id).emit("message", { username, message });
     });
 
     // logging messages handler
     socket.on("loggingMessage", ({ username, room_id, message }) => {
-        console.log("Logging message event caled from client.");
-        io.to(room_id).emit("loggingMessage", { message });
+        console.log(`${username} sending a LOG message to room: ${room_id}`);
+        io.to(socket?.data?.user?.id).emit("message", { username, message });
     });
 
     // fetch user
     socket.on("fetchUser", () => {
         const user = socket?.data?.user;
         user ? socket.emit("user", user) : socket.emit("user", null);
+    });
+
+    // fetch all users in room
+    socket.on("fetchAllOtherUsers", async () => {
+        const { user } = socket?.data;
+        const socketsInRoom = await fetchAllInRoom({
+            io,
+            room_id: user?.room_id,
+        });
+        const otherUsersInRoom = socketsInRoom
+            .filter((s) => s?.data?.user?.username !== user?.username)
+            .map((s) => s?.data?.user?.username);
+
+        io.to(user?.id).emit("allOtherUsers", {
+            user,
+            allUsersInRoom: otherUsersInRoom,
+        });
     });
 
     // fetch room details
@@ -88,18 +106,29 @@ io.on("connection", (socket) => {
     });
 
     // disconnect
-    socket.on("disconnect", (reason) => {
+    // TODO: when room creator (ADMIN) logs out, log everyone else out in the room
+    socket.on("disconnect", async (reason) => {
         console.log(`USER ${socket.id} DISCONNECTED: `, reason);
         if (socket?.data?.user) {
             const { room_id, username } = socket?.data?.user;
-            io.to(room_id).emit("message", {
-                username,
-                message: {
-                    encrypted: false,
-                    value: "diconnected.",
-                    iv: null,
-                },
+            const socketsInRoom = await fetchAllInRoom({ io, room_id });
+            const otherUsersInRoom = socketsInRoom.filter(
+                (s) => s?.data?.user?.username !== username
+            );
+
+            otherUsersInRoom.forEach((userSocket) => {
+                const { id: otherId, username: otherUsername } =
+                    userSocket?.data?.user;
+                const usersExceptSpecific = socketsInRoom
+                    .filter((s) => s?.data?.user?.username !== otherUsername)
+                    .map((s) => s?.data?.user?.username);
+
+                io.to(otherId).emit("allOtherUsers", {
+                    user: userSocket?.data?.user,
+                    allUsersInRoom: usersExceptSpecific,
+                });
             });
+
             io.to(room_id).emit("disableEncryption");
         }
     });

@@ -1,4 +1,5 @@
 const { encryptPass } = require("./encrypt");
+const { fetchAllInRoom } = require("./helpers");
 
 exports.createRoom = async ({
     io,
@@ -30,7 +31,7 @@ exports.createRoom = async ({
     });
 };
 
-exports.joinRoom = ({ io, socket, username, room_id, room_password }) => {
+exports.joinRoom = async ({ io, socket, username, room_id, room_password }) => {
     userData = {
         id: socket.id,
         username,
@@ -47,13 +48,21 @@ exports.joinRoom = ({ io, socket, username, room_id, room_password }) => {
     socket.data.user = userData;
     socket.join(room_id);
 
-    socket.to(room_id).emit("message", {
-        username,
-        message: {
-            encrypted: false,
-            value: "connected.",
-            iv: null,
-        },
+    const socketsInRoom = await fetchAllInRoom({ io, room_id });
+    const otherUsersInRoom = socketsInRoom.filter(
+        (s) => s?.data?.user?.username !== username
+    );
+
+    otherUsersInRoom.forEach((userSocket) => {
+        const { id: otherId, username: otherUsername } = userSocket?.data?.user;
+        const usersExceptSpecific = socketsInRoom
+            .filter((s) => s?.data?.user?.username !== otherUsername)
+            .map((s) => s?.data?.user?.username);
+
+        io.to(otherId).emit("allOtherUsers", {
+            user: userSocket?.data?.user,
+            allUsersInRoom: usersExceptSpecific,
+        });
     });
 
     socket.emit("login", {

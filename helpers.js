@@ -136,3 +136,11 @@ exports.sanitizeLoginData = ({ username, room_id, room_password }) => {
         room_password: sanitize(room_password),
     };
 };
+
+exports.fetchAllInRoom = async ({ io, room_id }) => {
+    const allSockets = await io.fetchSockets();
+    const roomIdSockets = allSockets.filter(
+        (s) => s?.data?.user?.room_id === room_id
+    );
+    return roomIdSockets;
+};
